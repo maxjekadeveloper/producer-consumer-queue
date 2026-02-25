@@ -233,14 +233,13 @@ int main()
 {
     DynamicThreadPool pool;
     std::vector<std::thread> producers;
-    std::atomic<int> counter{0};
 
     const int numberProducers = 4;
     const int numberTasks = 5000;
 
     for(int i{0}; i < numberProducers; ++i)
     {
-        producers.emplace_back([&pool, &counter]{
+        producers.emplace_back([&pool]{
         for(int j{0}; j < numberTasks; ++j) {
             TaskPriority priority = (TaskPriority) (j % (int)TaskPriority::CRITICAL + 1);
             pool.submit([]{
