@@ -60,7 +60,6 @@ private:
     void workerThread() {
         while (true) {
             Task task;
-            bool hasTask{false};
             {
                 std::unique_lock<std::mutex> lock(queueMutex_);
                 
@@ -71,14 +70,11 @@ private:
                 if (shutdown_.load() && taskQueue_.empty())
                     break;
                 
-                if (!taskQueue_.empty()) {
-                    task = taskQueue_.top();
-                    taskQueue_.pop();
-                    hasTask = true;
-                }
+                task = taskQueue_.top();
+                taskQueue_.pop();
             }
 
-            if(hasTask)
+            if(task.function)
                 proccessTask(task);
         }
         
@@ -228,33 +224,3 @@ public:
         std::cout << "Queue high water mark: " << stats.queueHighWaterMark << std::endl;
     }
 };
-
-int main()
-{
-    DynamicThreadPool pool;
-    std::vector<std::thread> producers;
-
-    const int numberProducers = 4;
-    const int numberTasks = 5000;
-
-    for(int i{0}; i < numberProducers; ++i)
-    {
-        producers.emplace_back([&pool]{
-        for(int j{0}; j < numberTasks; ++j) {
-            TaskPriority priority = (TaskPriority) (j % (int)TaskPriority::CRITICAL + 1);
-            pool.submit([]{
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }, priority);
-        }
-        });
-        
-    }
-
-    for(auto &producer : producers)
-        producer.join();
-
-    pool.~DynamicThreadPool();  
-    pool.printStats();
-
-    return 0;
-}
